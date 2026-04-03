@@ -1,17 +1,31 @@
-// 📄 路径: app/api/test/route.js
+import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+// 初始化 Redis 客户端
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN,
+});
 
-export async function GET(request) {
+export async function GET() {
   try {
-    return new Response(JSON.stringify({ message: 'Service is running', timestamp: Date.now() }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    // 测试连接
+    const testKey = `test:${Date.now()}`;
+    await redis.set(testKey, 'hello-upstash', { ex: 60 });
+    const value = await redis.get(testKey);
+    await redis.del(testKey);
+    
+    return NextResponse.json({ 
+      status: 'success', 
+      message: 'Upstash Redis connected!',
+      value,
+      timestamp: Date.now()
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[Redis Test]', error);
+    return NextResponse.json({ 
+      status: 'error', 
+      message: error.message 
+    }, { status: 500 });
   }
 }
