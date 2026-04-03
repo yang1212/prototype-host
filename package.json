@@ -11,6 +11,6 @@
     "next": "14",
     "react": "latest",
     "react-dom": "latest",
-    "@vercel/kv": "latest"
+    "@upstash/redis": "latest"
   }
 }

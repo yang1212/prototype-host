@@ -1,6 +1,8 @@
 // 📄 路径: app/api/deploy/route.js
 
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const kv = Redis.fromEnv();
 
 export const runtime = 'edge';
 
