@@ -1,6 +1,91 @@
 {
   "version": 3,
   "middleware": {},
-  "functions": {},
+  "functions": {
+    "/api/deploy/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/edge-chunks/557.js",
+        "server/app/api/deploy/route.js"
+      ],
+      "name": "app/api/deploy/route",
+      "page": "/api/deploy/route",
+      "matchers": [
+        {
+          "regexp": "^/api/deploy$",
+          "originalSource": "/api/deploy"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "SL04byMVOYsARGbTVDmDm",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "WWBCTW/sKI9CINeoii3xskyAOvK7DgAnNOXlVep0nTM=",
+        "__NEXT_PREVIEW_MODE_ID": "1e7426c0cf02273c6d8778246718ddf5",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "6962eced5801af0878ffac01101bc3c2348da5671a51aca743dc1328e4c075a0",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "444ec7732bd6a408172bc2a4e32c7a3a239c3a57bbb45c8e446eb40f78703c54"
+      }
+    },
+    "/api/cron/cleanup/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/edge-chunks/557.js",
+        "server/app/api/cron/cleanup/route.js"
+      ],
+      "name": "app/api/cron/cleanup/route",
+      "page": "/api/cron/cleanup/route",
+      "matchers": [
+        {
+          "regexp": "^/api/cron/cleanup$",
+          "originalSource": "/api/cron/cleanup"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "SL04byMVOYsARGbTVDmDm",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "WWBCTW/sKI9CINeoii3xskyAOvK7DgAnNOXlVep0nTM=",
+        "__NEXT_PREVIEW_MODE_ID": "1e7426c0cf02273c6d8778246718ddf5",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "6962eced5801af0878ffac01101bc3c2348da5671a51aca743dc1328e4c075a0",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "444ec7732bd6a408172bc2a4e32c7a3a239c3a57bbb45c8e446eb40f78703c54"
+      }
+    },
+    "/api/prototype/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/middleware-react-loadable-manifest.js",
+        "server/next-font-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/edge-runtime-webpack.js",
+        "server/edge-chunks/557.js",
+        "server/app/api/prototype/route.js"
+      ],
+      "name": "app/api/prototype/route",
+      "page": "/api/prototype/route",
+      "matchers": [
+        {
+          "regexp": "^/api/prototype$",
+          "originalSource": "/api/prototype"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "SL04byMVOYsARGbTVDmDm",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "WWBCTW/sKI9CINeoii3xskyAOvK7DgAnNOXlVep0nTM=",
+        "__NEXT_PREVIEW_MODE_ID": "1e7426c0cf02273c6d8778246718ddf5",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "6962eced5801af0878ffac01101bc3c2348da5671a51aca743dc1328e4c075a0",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "444ec7732bd6a408172bc2a4e32c7a3a239c3a57bbb45c8e446eb40f78703c54"
+      }
+    }
+  },
   "sortedMiddleware": []
 }
