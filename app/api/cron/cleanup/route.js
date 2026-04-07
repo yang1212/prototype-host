@@ -2,9 +2,20 @@
 
 import { Redis } from '@upstash/redis';
 
-const kv = Redis.fromEnv();
+// 明确配置 Redis 连接
+const kv = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL 
+    || process.env.KV_REST_API_URL 
+    || process.env.REDIS_URL
+    || process.env.UPSTASH_REDIS_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN 
+    || process.env.KV_REST_API_TOKEN
+    || process.env.KV_REST_API_READ_ONLY_TOKEN
+    || process.env.UPSTASH_REDIS_TOKEN,
+});
 
-export const runtime = 'edge';
+// 使用 Node.js runtime 避免 Edge Runtime 的网络限制
+export const runtime = 'nodejs';
 
 export async function GET(request) {
   try {

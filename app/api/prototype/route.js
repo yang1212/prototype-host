@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
+// Edge Runtime 下使用原生 fetch
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL 
     || process.env.KV_REST_API_URL 
@@ -10,9 +11,14 @@ const redis = new Redis({
     || process.env.KV_REST_API_TOKEN
     || process.env.KV_REST_API_READ_ONLY_TOKEN
     || process.env.UPSTASH_REDIS_TOKEN,
+  retry: {
+    retries: 3,
+    backoff: (retryCount) => Math.exp(retryCount) * 100,
+  },
 });
 
-export const runtime = 'edge';
+// 使用 Node.js runtime 避免 Edge Runtime 的网络限制
+export const runtime = 'nodejs';
 
 // CORS 响应头配置
 const corsHeaders = {

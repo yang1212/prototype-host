@@ -1,7 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
-// 初始化 Redis 客户端
+// 初始化 Redis 客户端 - 使用 Node.js runtime
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL 
     || process.env.KV_REST_API_URL 
@@ -12,6 +12,9 @@ const redis = new Redis({
     || process.env.KV_REST_API_READ_ONLY_TOKEN
     || process.env.UPSTASH_REDIS_TOKEN,
 });
+
+// 使用 Node.js runtime 避免 Edge Runtime 的网络限制
+export const runtime = 'nodejs';
 
 // CORS 响应头配置
 const corsHeaders = {

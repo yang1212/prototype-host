@@ -14,7 +14,8 @@ const kv = new Redis({
     || process.env.UPSTASH_REDIS_TOKEN,
 });
 
-export const runtime = 'edge';
+// 使用 Node.js runtime 避免 Edge Runtime 的网络限制
+export const runtime = 'nodejs';
 
 // CORS 响应头配置
 const corsHeaders = {
