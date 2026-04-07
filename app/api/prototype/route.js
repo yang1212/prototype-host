@@ -1,21 +1,35 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
-// Edge Runtime 下使用原生 fetch
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL 
-    || process.env.KV_REST_API_URL 
-    || process.env.REDIS_URL
-    || process.env.UPSTASH_REDIS_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN 
-    || process.env.KV_REST_API_TOKEN
-    || process.env.KV_REST_API_READ_ONLY_TOKEN
-    || process.env.UPSTASH_REDIS_TOKEN,
-  retry: {
-    retries: 3,
-    backoff: (retryCount) => Math.exp(retryCount) * 100,
-  },
-});
+// 获取 Redis 配置
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL 
+  || process.env.KV_REST_API_URL 
+  || process.env.REDIS_URL
+  || process.env.UPSTASH_REDIS_URL;
+
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN 
+  || process.env.KV_REST_API_TOKEN
+  || process.env.KV_REST_API_READ_ONLY_TOKEN
+  || process.env.UPSTASH_REDIS_TOKEN;
+
+// 初始化 Redis（延迟到使用时）
+let redis;
+function getRedis() {
+  if (!redis) {
+    if (!redisUrl || !redisToken) {
+      throw new Error(
+        'Redis 配置缺失。请设置环境变量:\n' +
+        'KV_REST_API_URL 和 KV_REST_API_TOKEN\n' +
+        '或 UPSTASH_REDIS_REST_URL 和 UPSTASH_REDIS_REST_TOKEN'
+      );
+    }
+    redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
+  }
+  return redis;
+}
 
 // 使用 Node.js runtime 避免 Edge Runtime 的网络限制
 export const runtime = 'nodejs';
@@ -46,6 +60,8 @@ export async function OPTIONS() {
 
 export async function POST(req) {
   try {
+    const redis = getRedis();
+    
     const { slug, title, html } = await req.json();
     
     if (!slug || !html) {
@@ -96,7 +112,7 @@ export async function POST(req) {
       
       console.log('[Prototype API] Index updated:', { slug, now });
     } catch (indexError) {
-      console.error('[Prototype API] Index error:', indexError.message);
+      console.error('[Prototype API] Index error:', indexError);
     }
     
     // 使用生产域名，避免使用 Vercel 默认项目 URL
@@ -121,6 +137,7 @@ export async function POST(req) {
 // 获取原型列表
 export async function GET() {
   try {
+    const redis = getRedis();
     const indexKey = 'proto:index:zset';
     
     // 从 Sorted Set 获取最近 50 个（分数降序）
