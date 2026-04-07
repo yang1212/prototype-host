@@ -15,14 +15,21 @@ const redis = new Redis({
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const list = await redis.lrange('proto:index', 0, -1) || [];
-  const prototypes = list.map(item => {
-    try {
-      return JSON.parse(item);
-    } catch {
-      return null;
-    }
-  }).filter(Boolean);
+  let prototypes = [];
+  
+  try {
+    const list = await redis.lrange('proto:index', 0, -1) || [];
+    prototypes = list.map(item => {
+      try {
+        return JSON.parse(item);
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch (error) {
+    console.error('[Home Page]', error);
+    prototypes = [];
+  }
   
   return (
     <div style={{
@@ -97,7 +104,7 @@ export default async function Home() {
                 fontSize: '12px',
                 color: '#9ca3af'
               }}>
-                {new Date(parseInt(proto.createdAt)).toLocaleString('zh-CN')}
+                {new Date(parseInt(proto.createdAt || proto.created_at || Date.now())).toLocaleString('zh-CN')}
               </p>
             </Link>
           ))}
