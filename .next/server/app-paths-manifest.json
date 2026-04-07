@@ -1,9 +1,9 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/p/[slug]/page": "app/p/[slug]/page.js",
   "/api/test/route": "app/api/test/route.js",
+  "/p/[slug]/page": "app/p/[slug]/page.js",
   "/page": "app/page.js",
+  "/api/prototype/route": "app/api/prototype/route.js",
   "/api/deploy/route": "app/api/deploy/route.js",
-  "/api/cron/cleanup/route": "app/api/cron/cleanup/route.js",
-  "/api/prototype/route": "app/api/prototype/route.js"
+  "/api/cron/cleanup/route": "app/api/cron/cleanup/route.js"
 }

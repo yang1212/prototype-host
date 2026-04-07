@@ -1,1 +1,1 @@
-{"/_not-found/page":"/_not-found","/p/[slug]/page":"/p/[slug]","/api/test/route":"/api/test","/page":"/","/api/deploy/route":"/api/deploy","/api/cron/cleanup/route":"/api/cron/cleanup","/api/prototype/route":"/api/prototype"}
+{"/_not-found/page":"/_not-found","/api/test/route":"/api/test","/p/[slug]/page":"/p/[slug]","/page":"/","/api/prototype/route":"/api/prototype","/api/deploy/route":"/api/deploy","/api/cron/cleanup/route":"/api/cron/cleanup"}
