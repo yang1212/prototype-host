@@ -141,7 +141,8 @@ export async function GET() {
     const indexKey = 'proto:index:zset';
     
     // 从 Sorted Set 获取最近 50 个（分数降序）
-    const slugs = await redis.zrevrange(indexKey, 0, 49) || [];
+    // 使用 zrange 配合 rev 选项
+    const slugs = await redis.zrange(indexKey, 0, 49, { rev: true }) || [];
     console.log('[Prototype API] Slugs from zset:', slugs.length);
     
     // 获取每个 slug 的元数据

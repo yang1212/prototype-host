@@ -19,7 +19,7 @@ export default async function Home() {
   
   try {
     // 使用新的 Sorted Set 索引
-    const slugs = await redis.zrevrange('proto:index:zset', 0, 49) || [];
+    const slugs = await redis.zrange('proto:index:zset', 0, 49, { rev: true }) || [];
     
     // 获取每个 slug 的元数据
     for (const slug of slugs) {
