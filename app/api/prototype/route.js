@@ -70,56 +70,33 @@ export async function POST(req) {
       views: '0'
     });
     
-    // 维护索引列表
-    const indexKey = 'proto:index';
-    const indexItem = JSON.stringify({
-      slug,
-      title: title || slug,
-      createdAt: Date.now().toString()
-    });
-    
-    console.log('[Prototype API] Starting index update:', { slug, indexItem });
+    // 使用 Sorted Set 维护索引 - 更可靠，自动按时间排序
+    const indexKey = 'proto:index:zset';
+    const metaKey = `proto:meta:${slug}`;
+    const now = Date.now();
     
     try {
-      // 使用更简单可靠的方式：直接删除整个列表重建
-      // 这避免了 lrem 的复杂性和潜在的 Redis 兼容性问题
-      const existingList = await redis.lrange(indexKey, 0, -1);
-      console.log('[Prototype API] Existing list length:', existingList.length);
+      // 存储元数据
+      await redis.hset(metaKey, {
+        slug,
+        title: title || slug,
+        createdAt: now.toString()
+      });
+      // 设置 7 天过期
+      await redis.expire(metaKey, 7 * 24 * 60 * 60);
       
-      // 过滤掉当前 slug 的旧记录
-      const filteredItems = [];
-      for (const item of existingList) {
-        try {
-          const parsed = JSON.parse(item);
-          if (parsed.slug !== slug) {
-            filteredItems.push(item);
-          }
-        } catch {
-          // 解析错误的跳过
-        }
+      // 添加到 Sorted Set（分数为时间戳，最新的在前面）
+      await redis.zadd(indexKey, { score: now, member: slug });
+      
+      // 只保留最近 50 个
+      const count = await redis.zcard(indexKey);
+      if (count > 50) {
+        await redis.zremrangebyrank(indexKey, 0, count - 51);
       }
       
-      console.log('[Prototype API] Filtered items:', filteredItems.length);
-      
-      // 删除旧列表
-      await redis.del(indexKey);
-      
-      // 重新构建：新条目 + 旧条目（限制50个）
-      const newList = [indexItem, ...filteredItems].slice(0, 50);
-      
-      if (newList.length > 0) {
-        // 使用 rpush 批量添加（从尾部添加，之后反转或直接用）
-        // 或者用 lpush + 反转顺序
-        for (let i = newList.length - 1; i >= 0; i--) {
-          await redis.lpush(indexKey, newList[i]);
-        }
-      }
-      
-      const verifyList = await redis.lrange(indexKey, 0, -1);
-      console.log('[Prototype API] New list length:', verifyList.length);
-      
+      console.log('[Prototype API] Index updated:', { slug, now });
     } catch (indexError) {
-      console.error('[Prototype API] Index update error:', indexError.message, indexError.stack);
+      console.error('[Prototype API] Index error:', indexError.message);
     }
     
     // 使用生产域名，避免使用 Vercel 默认项目 URL
@@ -144,22 +121,30 @@ export async function POST(req) {
 // 获取原型列表
 export async function GET() {
   try {
-    console.log('[Prototype API] Fetching list from Redis...');
-    console.log('[Prototype API] Redis URL exists:', !!process.env.KV_REST_API_URL);
+    const indexKey = 'proto:index:zset';
     
-    const list = await redis.lrange('proto:index', 0, -1) || [];
-    console.log('[Prototype API] Raw list:', list);
+    // 从 Sorted Set 获取最近 50 个（分数降序）
+    const slugs = await redis.zrevrange(indexKey, 0, 49) || [];
+    console.log('[Prototype API] Slugs from zset:', slugs.length);
     
-    const prototypes = list.map(item => {
+    // 获取每个 slug 的元数据
+    const prototypes = [];
+    for (const slug of slugs) {
       try {
-        return JSON.parse(item);
+        const meta = await redis.hgetall(`proto:meta:${slug}`);
+        if (meta && meta.slug) {
+          prototypes.push({
+            slug: meta.slug,
+            title: meta.title || meta.slug,
+            createdAt: meta.createdAt || Date.now().toString()
+          });
+        }
       } catch (e) {
-        console.error('[Prototype API] Failed to parse item:', item, e.message);
-        return null;
+        console.error('[Prototype API] Failed to get meta for:', slug);
       }
-    }).filter(Boolean);
+    }
     
-    console.log('[Prototype API] Parsed prototypes:', prototypes);
+    console.log('[Prototype API] Prototypes found:', prototypes.length);
     
     return createCorsResponse({
       success: true,
@@ -169,7 +154,7 @@ export async function GET() {
   } catch (error) {
     console.error('[Prototype API] GET error:', error);
     return createCorsResponse(
-      { error: error.message, details: error.stack }, 
+      { error: error.message }, 
       500
     );
   }

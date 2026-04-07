@@ -18,14 +18,20 @@ export default async function Home() {
   let prototypes = [];
   
   try {
-    const list = await redis.lrange('proto:index', 0, -1) || [];
-    prototypes = list.map(item => {
-      try {
-        return JSON.parse(item);
-      } catch {
-        return null;
+    // 使用新的 Sorted Set 索引
+    const slugs = await redis.zrevrange('proto:index:zset', 0, 49) || [];
+    
+    // 获取每个 slug 的元数据
+    for (const slug of slugs) {
+      const meta = await redis.hgetall(`proto:meta:${slug}`);
+      if (meta && meta.slug) {
+        prototypes.push({
+          slug: meta.slug,
+          title: meta.title || meta.slug,
+          createdAt: meta.createdAt || Date.now().toString()
+        });
       }
-    }).filter(Boolean);
+    }
   } catch (error) {
     console.error('[Home Page]', error);
     prototypes = [];
