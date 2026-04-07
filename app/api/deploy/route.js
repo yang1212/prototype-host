@@ -103,7 +103,9 @@ export async function POST(request) {
       console.error('[Deploy API] Index error:', indexError);
     }
 
-    const url = `https://${process.env.VERCEL_URL}/p/${slug}`;
+    // 使用生产域名
+    const baseUrl = 'https://prototype-host.vercel.app';
+    const url = `${baseUrl}/p/${slug}`;
     return new NextResponse(JSON.stringify({ url, success: true }), {
       status: 200,
       headers: { 

@@ -122,9 +122,8 @@ export async function POST(req) {
       console.error('[Prototype API] Index update error:', indexError.message, indexError.stack);
     }
     
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : `http://localhost:3000`;
+    // 使用生产域名，避免使用 Vercel 默认项目 URL
+    const baseUrl = 'https://prototype-host.vercel.app';
     
     return createCorsResponse({
       success: true,
