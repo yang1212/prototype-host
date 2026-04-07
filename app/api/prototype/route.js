@@ -70,7 +70,7 @@ export async function POST(req) {
       views: '0'
     });
     
-    // 维护索引列表 - 简化逻辑，直接使用 Set 保证唯一性
+    // 维护索引列表
     const indexKey = 'proto:index';
     const indexItem = JSON.stringify({
       slug,
@@ -78,28 +78,48 @@ export async function POST(req) {
       createdAt: Date.now().toString()
     });
     
+    console.log('[Prototype API] Starting index update:', { slug, indexItem });
+    
     try {
-      // 先移除旧记录（如果存在）
-      const existingIndex = await redis.lrange(indexKey, 0, -1);
-      for (const item of existingIndex) {
+      // 使用更简单可靠的方式：直接删除整个列表重建
+      // 这避免了 lrem 的复杂性和潜在的 Redis 兼容性问题
+      const existingList = await redis.lrange(indexKey, 0, -1);
+      console.log('[Prototype API] Existing list length:', existingList.length);
+      
+      // 过滤掉当前 slug 的旧记录
+      const filteredItems = [];
+      for (const item of existingList) {
         try {
           const parsed = JSON.parse(item);
-          if (parsed.slug === slug) {
-            await redis.lrem(indexKey, 0, item);
+          if (parsed.slug !== slug) {
+            filteredItems.push(item);
           }
         } catch {
-          // 忽略解析错误的条目
+          // 解析错误的跳过
         }
       }
       
-      // 添加到列表头部
-      await redis.lpush(indexKey, indexItem);
+      console.log('[Prototype API] Filtered items:', filteredItems.length);
       
-      // 限制列表长度为 50
-      await redis.ltrim(indexKey, 0, 49);
+      // 删除旧列表
+      await redis.del(indexKey);
+      
+      // 重新构建：新条目 + 旧条目（限制50个）
+      const newList = [indexItem, ...filteredItems].slice(0, 50);
+      
+      if (newList.length > 0) {
+        // 使用 rpush 批量添加（从尾部添加，之后反转或直接用）
+        // 或者用 lpush + 反转顺序
+        for (let i = newList.length - 1; i >= 0; i--) {
+          await redis.lpush(indexKey, newList[i]);
+        }
+      }
+      
+      const verifyList = await redis.lrange(indexKey, 0, -1);
+      console.log('[Prototype API] New list length:', verifyList.length);
+      
     } catch (indexError) {
-      console.error('[Prototype API] Index update error:', indexError);
-      // 索引更新失败不阻断主流程
+      console.error('[Prototype API] Index update error:', indexError.message, indexError.stack);
     }
     
     const baseUrl = process.env.VERCEL_URL 
