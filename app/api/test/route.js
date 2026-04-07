@@ -13,6 +13,22 @@ const redis = new Redis({
     || process.env.UPSTASH_REDIS_TOKEN,
 });
 
+// CORS 响应头配置
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
+// 处理预检请求
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function GET() {
   try {
     // 测试连接
@@ -26,12 +42,12 @@ export async function GET() {
       message: 'Upstash Redis connected!',
       value,
       timestamp: Date.now()
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('[Redis Test]', error);
     return NextResponse.json({ 
       status: 'error', 
       message: error.message 
-    }, { status: 500 });
+    }, { status: 500, headers: corsHeaders });
   }
 }

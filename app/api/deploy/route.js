@@ -1,10 +1,36 @@
 // 📄 路径: app/api/deploy/route.js
 
 import { Redis } from '@upstash/redis';
+import { NextResponse } from 'next/server';
 
-const kv = Redis.fromEnv();
+const kv = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL 
+    || process.env.KV_REST_API_URL 
+    || process.env.REDIS_URL
+    || process.env.UPSTASH_REDIS_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN 
+    || process.env.KV_REST_API_TOKEN
+    || process.env.KV_REST_API_READ_ONLY_TOKEN
+    || process.env.UPSTASH_REDIS_TOKEN,
+});
 
 export const runtime = 'edge';
+
+// CORS 响应头配置
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
+// 处理预检请求
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
 
 export async function POST(request) {
   try {
@@ -12,17 +38,23 @@ export async function POST(request) {
 
     // 验证字段
     if (!slug || !title || !html) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+      return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders 
+        },
       });
     }
 
     // 验证 slug 格式
     if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
-      return new Response(JSON.stringify({ error: 'Invalid slug format' }), {
+      return new NextResponse(JSON.stringify({ error: 'Invalid slug format' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders 
+        },
       });
     }
 
@@ -54,14 +86,20 @@ export async function POST(request) {
     }
 
     const url = `https://${process.env.VERCEL_URL}/p/${slug}`;
-    return new Response(JSON.stringify({ url, success: true }), {
+    return new NextResponse(JSON.stringify({ url, success: true }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders 
+      },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders 
+      },
     });
   }
 }

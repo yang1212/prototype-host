@@ -14,14 +14,38 @@ const redis = new Redis({
 
 export const runtime = 'edge';
 
+// CORS 响应头配置
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
+// 创建带 CORS 头的响应
+function createCorsResponse(data, status = 200) {
+  return NextResponse.json(data, { 
+    status,
+    headers: corsHeaders 
+  });
+}
+
+// 处理预检请求
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(req) {
   try {
     const { slug, title, html } = await req.json();
     
     if (!slug || !html) {
-      return NextResponse.json(
+      return createCorsResponse(
         { error: 'Missing slug or html' }, 
-        { status: 400 }
+        400
       );
     }
     
@@ -83,7 +107,7 @@ export async function POST(req) {
       ? `https://${process.env.VERCEL_URL}` 
       : `http://localhost:3000`;
     
-    return NextResponse.json({
+    return createCorsResponse({
       success: true,
       url: `${baseUrl}/p/${slug}`,
       slug,
@@ -92,9 +116,9 @@ export async function POST(req) {
     
   } catch (error) {
     console.error('[Prototype API]', error);
-    return NextResponse.json(
+    return createCorsResponse(
       { error: error.message }, 
-      { status: 500 }
+      500
     );
   }
 }
@@ -111,15 +135,15 @@ export async function GET() {
       }
     }).filter(Boolean);
     
-    return NextResponse.json({
+    return createCorsResponse({
       success: true,
       count: prototypes.length,
       prototypes
     });
   } catch (error) {
-    return NextResponse.json(
+    return createCorsResponse(
       { error: error.message }, 
-      { status: 500 }
+      500
     );
   }
 }
