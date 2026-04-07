@@ -70,44 +70,37 @@ export async function POST(req) {
       views: '0'
     });
     
-    // 维护索引列表（使用 List 结构）
+    // 维护索引列表 - 简化逻辑，直接使用 Set 保证唯一性
     const indexKey = 'proto:index';
-    
-    // 检查是否已存在
-    const existingIndex = await redis.lrange(indexKey, 0, -1);
-    const filteredList = existingIndex.filter(item => {
-      try {
-        const parsed = JSON.parse(item);
-        return parsed.slug !== slug;
-      } catch {
-        return true;
-      }
-    });
-    
-    // 添加新记录到头部
-    await redis.lpush(indexKey, JSON.stringify({
+    const indexItem = JSON.stringify({
       slug,
       title: title || slug,
       createdAt: Date.now().toString()
-    }));
+    });
     
-    // 如果列表中有旧记录，移除
-    if (filteredList.length < existingIndex.length) {
-      // 重建列表
-      await redis.del(indexKey);
-      await redis.lpush(indexKey, JSON.stringify({
-        slug,
-        title: title || slug,
-        createdAt: Date.now().toString()
-      }));
-      // 添加其他记录
-      for (const item of filteredList.slice(0, 49)) {
-        await redis.rpush(indexKey, item);
+    try {
+      // 先移除旧记录（如果存在）
+      const existingIndex = await redis.lrange(indexKey, 0, -1);
+      for (const item of existingIndex) {
+        try {
+          const parsed = JSON.parse(item);
+          if (parsed.slug === slug) {
+            await redis.lrem(indexKey, 0, item);
+          }
+        } catch {
+          // 忽略解析错误的条目
+        }
       }
+      
+      // 添加到列表头部
+      await redis.lpush(indexKey, indexItem);
+      
+      // 限制列表长度为 50
+      await redis.ltrim(indexKey, 0, 49);
+    } catch (indexError) {
+      console.error('[Prototype API] Index update error:', indexError);
+      // 索引更新失败不阻断主流程
     }
-    
-    // 限制列表长度为 50
-    await redis.ltrim(indexKey, 0, 49);
     
     const baseUrl = process.env.VERCEL_URL 
       ? `https://${process.env.VERCEL_URL}` 
@@ -132,14 +125,22 @@ export async function POST(req) {
 // 获取原型列表
 export async function GET() {
   try {
+    console.log('[Prototype API] Fetching list from Redis...');
+    console.log('[Prototype API] Redis URL exists:', !!process.env.KV_REST_API_URL);
+    
     const list = await redis.lrange('proto:index', 0, -1) || [];
+    console.log('[Prototype API] Raw list:', list);
+    
     const prototypes = list.map(item => {
       try {
         return JSON.parse(item);
-      } catch {
+      } catch (e) {
+        console.error('[Prototype API] Failed to parse item:', item, e.message);
         return null;
       }
     }).filter(Boolean);
+    
+    console.log('[Prototype API] Parsed prototypes:', prototypes);
     
     return createCorsResponse({
       success: true,
@@ -147,8 +148,9 @@ export async function GET() {
       prototypes
     });
   } catch (error) {
+    console.error('[Prototype API] GET error:', error);
     return createCorsResponse(
-      { error: error.message }, 
+      { error: error.message, details: error.stack }, 
       500
     );
   }

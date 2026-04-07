@@ -65,25 +65,42 @@ export async function POST(request) {
       .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
 
     const now = Date.now();
-    const protoData = {
+    const key = `proto:${slug}`;
+    
+    // 统一使用哈希格式存储
+    await kv.hset(key, {
       html: sanitizedHtml,
       title,
-      createdAt: now,
-    };
-
-    // 存入 KV
-    await kv.set(`proto:${slug}`, protoData);
+      createdAt: now.toString(),
+      views: '0'
+    });
 
     // 更新索引列表
-    const index = await kv.lrange('proto:index', 0, 49);
-    const newIndex = [JSON.stringify({ slug, createdAt: now }), ...index.filter(item => {
-      const { slug: existingSlug } = JSON.parse(item);
-      return existingSlug !== slug;
-    })].slice(0, 50);
-
-    await kv.del('proto:index');
-    if (newIndex.length > 0) {
-      await kv.rpush('proto:index', ...newIndex);
+    try {
+      // 移除旧记录
+      const index = await kv.lrange('proto:index', 0, -1);
+      for (const item of index) {
+        try {
+          const parsed = JSON.parse(item);
+          if (parsed.slug === slug) {
+            await kv.lrem('proto:index', 0, item);
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
+      
+      // 添加到头部
+      await kv.lpush('proto:index', JSON.stringify({ 
+        slug, 
+        title,
+        createdAt: now.toString() 
+      }));
+      
+      // 限制长度
+      await kv.ltrim('proto:index', 0, 49);
+    } catch (indexError) {
+      console.error('[Deploy API] Index error:', indexError);
     }
 
     const url = `https://${process.env.VERCEL_URL}/p/${slug}`;
