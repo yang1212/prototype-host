@@ -114,13 +114,15 @@ export default async function PrototypePage({ params }) {
             >
               ← 返回列表
             </a>
-            <button
-              onClick={() => window.open(`/p/${params.slug}`, '_blank')}
+            <a
+              href={`/p/${params.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
                 padding: '6px 12px',
                 background: '#3b82f6',
                 color: 'white',
-                border: 'none',
+                textDecoration: 'none',
                 borderRadius: '6px',
                 fontSize: '13px',
                 fontWeight: 500,
@@ -128,7 +130,7 @@ export default async function PrototypePage({ params }) {
               }}
             >
               ↗ 新窗口
-            </button>
+            </a>
           </div>
         </header>
         
